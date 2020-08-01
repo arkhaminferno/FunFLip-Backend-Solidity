@@ -3,9 +3,10 @@
 pragma solidity 0.6.6;
 
 import "https://raw.githubusercontent.com/smartcontractkit/chainlink/7a4e19a8ff07db1be0b397465d38d175bc0bb5b5/evm-contracts/src/v0.6/VRFConsumerBase.sol";
-
+import "https://github.com/OpenZeppelin/openzeppelin-contracts/tree/master/contracts/math";
 contract RandomNumberConsumer is VRFConsumerBase {
     
+    using SafeMath for uint256;
  // State Variables & Mappings Declaration
 
 //=============================================================================
@@ -31,8 +32,9 @@ contract RandomNumberConsumer is VRFConsumerBase {
 
 //=============================================================================
     
-    event betMade(address indexed ,uint amount,uint sideSelected,uint coinflipResult,uint amountWon);
-    event widthdrawMade(address indexed,uint amount);
+    event logResult (address user, uint betamount,string sideSelected,string result, uint winamount,string outcome);
+    event balanceUpdated(address playeraddress , uint amount);
+    event widthdrawMade(address user,uint amount);
 
 //=============================================================================
 
@@ -74,18 +76,39 @@ contract RandomNumberConsumer is VRFConsumerBase {
     /** @dev Flip Coin function  
     */ 
     
-    function flip(uint _side,uint _seed){
+    function flip(uint _headsOrTails,uint _seed) public payable {
         require(msg.value!=0 ether);
-        // number between 0-4= heads 
-        //number between 5-9 = tails
-        require(side>=0 && side <=9,"please choose numbers between 0 to 9 ");
+        require(_headsOrTails == 1 || _headsOrTails == 2, "Choice needs to be 1 or 2");
         requestRandomness(keyHash,fee,_seed);
-        uint generatedRandomNumber = uint(keccak256(abi.encodePacked(randomResult)))%10;
+        uint generatedRandomNumber =  (uint256(keccak256(abi.encodePacked(_result))) % 2) + 1;
+        string memory result;
+        string memory userselectedSide;
+        if(_headsOrTails == 1){
+            userselectedSide = "Heads!";
+        }
+        if(_headsOrTails ==2){
+            userselectedSide = "Tails";
+        }
+        if(generatedRandomNumber == 1 ){
+            result = "heads!";
+        }
+        if(generatedRandomNumber == 2){
+            result = "Tails!";
+        }
+        if(_headsOrTails == generatedRandomNumber){
+            uint winamount=  msg.value.mul(2);
+            WinningAmount[msg.sender] = winamount;
+            emit balanceUpdated(msg.sender,Fivepercent);
+            emit logResult(msg.sender, msg.value, userselectedSide, result,winamount,"!WON");
+        }
+        if(_headsOrTails != generatedRandomNumber){
+           uint Fivepercent =  msg.value.div(5);
+           WinningAmount[msg.sender] = Fivepercent;
+           emit balanceUpdated(msg.sender,Fivepercent);
+           emit logResult(msg.sender, msg.value, userselectedSide, result,winamount,"!LOSS");
+        }
         
-        //todo check random
-        
-        //todo update balance
-        
+
     }
     
      /** @dev Withdraw Win Amount 
