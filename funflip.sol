@@ -3,7 +3,7 @@
 pragma solidity 0.6.6;
 
 import "https://raw.githubusercontent.com/smartcontractkit/chainlink/7a4e19a8ff07db1be0b397465d38d175bc0bb5b5/evm-contracts/src/v0.6/VRFConsumerBase.sol";
-import "https://github.com/OpenZeppelin/openzeppelin-contracts/tree/master/contracts/math";
+
 contract RandomNumberConsumer is VRFConsumerBase {
     
     using SafeMath for uint256;
@@ -80,7 +80,7 @@ contract RandomNumberConsumer is VRFConsumerBase {
         require(msg.value!=0 ether);
         require(_headsOrTails == 1 || _headsOrTails == 2, "Choice needs to be 1 or 2");
         requestRandomness(keyHash,fee,_seed);
-        uint generatedRandomNumber =  (uint256(keccak256(abi.encodePacked(_result))) % 2) + 1;
+        uint generatedRandomNumber =  (uint256(keccak256(abi.encodePacked(randomResult))) % 2) + 1;
         string memory result;
         string memory userselectedSide;
         if(_headsOrTails == 1){
@@ -98,14 +98,14 @@ contract RandomNumberConsumer is VRFConsumerBase {
         if(_headsOrTails == generatedRandomNumber){
             uint winamount=  msg.value.mul(2);
             WinningAmount[msg.sender] = winamount;
-            emit balanceUpdated(msg.sender,Fivepercent);
+            emit balanceUpdated(msg.sender,winamount);
             emit logResult(msg.sender, msg.value, userselectedSide, result,winamount,"!WON");
         }
         if(_headsOrTails != generatedRandomNumber){
            uint Fivepercent =  msg.value.div(5);
            WinningAmount[msg.sender] = Fivepercent;
            emit balanceUpdated(msg.sender,Fivepercent);
-           emit logResult(msg.sender, msg.value, userselectedSide, result,winamount,"!LOSS");
+           emit logResult(msg.sender, msg.value, userselectedSide, result,Fivepercent,"!LOSS");
         }
         
 
