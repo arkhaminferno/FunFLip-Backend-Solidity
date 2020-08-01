@@ -7,7 +7,7 @@ import "https://raw.githubusercontent.com/smartcontractkit/chainlink/7a4e19a8ff0
 contract RandomNumberConsumer is VRFConsumerBase {
     
     using SafeMath for uint256;
- // State Variables & Mappings Declaration
+ 
 
 //=============================================================================
 
@@ -21,15 +21,28 @@ contract RandomNumberConsumer is VRFConsumerBase {
     
     // no of referrals of a given user
     mapping(address=>uint) public referrals;
+    
+      //owner's address
+    address payable owner;
+    
+    // Pausable Contract
+    bool public isContractPaused;
 
 
 //=============================================================================
     
   
 
-    
-    // Events Declaration
+// Modifiers Declaration
 
+//=============================================================================
+    modifier onlyOwner(){
+    require(msg.sender == owner);
+        _;
+    }
+//=============================================================================
+    
+// Events Declaration
 //=============================================================================
     
     event logResult (address user, uint betamount,string sideSelected,string result, uint winamount,string outcome);
@@ -55,6 +68,7 @@ contract RandomNumberConsumer is VRFConsumerBase {
     {
         keyHash = 0xced103054e349b8dfb51352f0f8fa9b5d20dde3d06f9f43cb2b85bc64b238205;
         fee = 0.1 * 10 ** 18; // 0.1 LINK //1000000000000000000 LINK 
+        isContractPaused =false;
     }
     
     /** 
@@ -77,8 +91,11 @@ contract RandomNumberConsumer is VRFConsumerBase {
     */ 
     
     function flip(uint _headsOrTails,uint _seed) public payable {
+        require(isContractPaused == false);
         require(msg.value!=0 ether);
         require(_headsOrTails == 1 || _headsOrTails == 2, "Choice needs to be 1 or 2");
+        uint bankrollBalance = bankRollBalance();
+        require(bankrollBalance > 0,"Sorry no Funds on bankroll");
         requestRandomness(keyHash,fee,_seed);
         uint generatedRandomNumber =  (uint256(keccak256(abi.encodePacked(randomResult))) % 2) + 1;
         string memory result;
@@ -123,4 +140,26 @@ contract RandomNumberConsumer is VRFConsumerBase {
        emit widthdrawMade(msg.sender ,amount);
        return true;
    }
+   
+     function PauseContract() public onlyOwner returns(bool success){
+       isContractPaused = true;
+       return true;
+   }
+    
+    
+    function unPauseContract() public onlyOwner returns(bool success){
+        isContractPaused =false;
+        return true;
+    }
+    //Anyone can Fund game Bankroll
+    function depositInBankRoll() public payable  {
+       require(isContractPaused == false);
+       require(msg.value != 0 ether);
+   }
+   
+   //CheckBankroll Balance
+     function bankRollBalance() public view  returns(uint) {
+       return address(this).balance;
+   }
+   
 }
